@@ -1,5 +1,6 @@
 #include "HelloWorldScene.h"
 #include "SnakeScene.h"
+#include "BodyScene.h"
 
 USING_NS_CC;
 
@@ -34,6 +35,7 @@ bool HelloWorld::init()
     addChild(snake);
     snake->start();
     
+    this->createFood();
     
     auto listener = EventListenerTouchOneByOne::create();
     listener->onTouchBegan = [this](Touch *t, Event *e){
@@ -44,17 +46,27 @@ bool HelloWorld::init()
     Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(listener, this);
     
     auto contactListener = EventListenerPhysicsContact::create();
-    contactListener->onContactBegin = [](PhysicsContact& contact){
+    contactListener->onContactBegin = [this](PhysicsContact& contact){
         switch (contact.getShapeA()->getBody()->getContactTestBitmask()|contact.getShapeB()->getBody()->getContactTestBitmask()) {
-            case SNAKE_BIT_MAST:
+            case SNAKE_BODY_BIT_MAST|SNAKE_HEAD_BIT_MAST:
             {
                 log("自身相撞");
+                    snake->end();
+                    Director::getInstance()->replaceScene(TransitionFade::create(1, HelloWorld::createScene()));
             }
                 break;
-            case SNAKE_BIT_MAST|EDGE_BIT_MASK:
+            case SNAKE_HEAD_BIT_MAST|EDGE_BIT_MASK:
             {
                 log("撞墙");
+                snake->end();
                 Director::getInstance()->replaceScene(TransitionFade::create(1, HelloWorld::createScene()));
+            }
+                break;
+            case SNAKE_HEAD_BIT_MAST|SNAKE_FOOD_BIT_MAST:
+            {
+                log("eat");
+                snake->addBody();
+                this->changeFoodPosition();
             }
                 break;
                 
@@ -72,11 +84,11 @@ bool HelloWorld::init()
 void HelloWorld::handleDirect(cocos2d::Point point)
 {
     Direct d = snake->getDirect();
-    short xx = point.x - visibleSize.width/2.0;
-    short yy = point.y - visibleSize.height/2.0;
+    Point p = snake->getPosition();
+    short xx = point.x - p.x;
+    short yy = point.y - p.y;
     
-    Direct newDirect;
-    
+    Direct newDirect = d;
     switch (d) {
         case Up:
         {
@@ -91,9 +103,8 @@ void HelloWorld::handleDirect(cocos2d::Point point)
             } else {
                 if (yy < 0) {
                     // down
-                    newDirect = Down;
+//                    newDirect = Down;
                 }
-                
             }
         }
             break;
@@ -110,7 +121,7 @@ void HelloWorld::handleDirect(cocos2d::Point point)
             } else {
                 if (yy > 0) {
                     // up
-                    newDirect = Up;
+//                    newDirect = Up;
                 }
                 
             }
@@ -129,7 +140,7 @@ void HelloWorld::handleDirect(cocos2d::Point point)
             } else {
                 if (xx > 0) {
                     // right
-                    newDirect = Right;
+//                    newDirect = Right;
                 }
                 
             }
@@ -148,14 +159,14 @@ void HelloWorld::handleDirect(cocos2d::Point point)
             } else {
                 if (xx < 0) {
                     // left
-                    newDirect = Left;
+//                    newDirect = Left;
                 }
                 
             }
         }
             break;
-            newDirect = d;
         default:
+            newDirect = d;
             break;
     }
     
@@ -171,4 +182,22 @@ void HelloWorld::onEnter(){
     bounds->setPhysicsBody(PhysicsBody::createEdgeBox(bounds->getContentSize(), PHYSICSSHAPE_MATERIAL_DEFAULT, 0));
     bounds->getPhysicsBody()->setContactTestBitmask(EDGE_BIT_MASK);
     addChild(bounds);
+}
+
+void HelloWorld::createFood(){
+    int x = rand()%16 * 20;
+    int y = rand()%24 * 20;
+    Point position = Point(x,y);
+    Size size = Size(20,20);
+    food = BodyScene::createBody(position, size);
+    food->setPhysicsBody(PhysicsBody::createBox(size));
+    food->getPhysicsBody()->setContactTestBitmask(SNAKE_FOOD_BIT_MAST);
+    addChild(food);
+}
+
+void HelloWorld::changeFoodPosition(){
+    int x = rand()%16 * 20;
+    int y = rand()%24 * 20;
+    Point position = Point(x,y);
+    food->setPosition(position);
 }
