@@ -48,6 +48,9 @@ public:
     void setPosition(cocos2d::Point p);
     cocos2d::Point getPosition();
     
+    cocos2d::__Array *getBodys();
+    void setBodys(cocos2d::__Array *bs);
+    
     void addBody();
 };
 

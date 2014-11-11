@@ -8,6 +8,9 @@
 
 #include "SnakeScene.h"
 #include "BodyScene.h"
+
+#define BODY_WIDTH          20
+
 USING_NS_CC;
 
 bool SnakeSprite::init(){
@@ -35,8 +38,8 @@ void SnakeSprite::enemyInit(int num){
     number = num;
     bodys = __Array::create();
     bodys->retain();
-    Point position = Point(100,100);
-    Size size = Size(20, 20);
+    Point position = Point((640-BODY_WIDTH)/2,(640-BODY_WIDTH)/2);
+    Size size = Size(BODY_WIDTH, BODY_WIDTH);
     BodyScene *body = BodyScene::createBody(position, size);
     
     body->setPhysicsBody(PhysicsBody::createBox(size));
@@ -71,7 +74,7 @@ bool SnakeSprite::start(){
 
 void SnakeSprite::end(){
     this->unschedule(schedule_selector(SnakeSprite::run));
-    bodys->release();
+    CC_SAFE_DELETE(bodys);
 }
 
 void SnakeSprite::setPosition(cocos2d::Point p)
@@ -84,18 +87,33 @@ cocos2d::Point SnakeSprite::getPosition()
     return position;
 }
 
+cocos2d::__Array* SnakeSprite::getBodys(){
+    return bodys;
+}
+
+void SnakeSprite::setBodys(cocos2d::__Array *bs)
+{
+    CC_SAFE_DELETE(bodys);
+    bodys = __Array::create();
+    bodys = bs;
+    bodys->retain();
+}
+
 // 1 2 3 4 5
 void SnakeSprite::run(float x){
     
-    int space = 20 + 1;
+    int space = BODY_WIDTH;
     int count = (int)bodys->count();
     for (int i = count-1; i >= 0; i--) {
             BodyScene *body1 = (BodyScene *)bodys->getObjectAtIndex(i);
         if (i > 0) {
             BodyScene *body2 = (BodyScene *)bodys->getObjectAtIndex(i-1);
             body1->setPosition(body2->getPosition());
+            body1->getPhysicsBody()->setContactTestBitmask(SNAKE_BODY_BIT_MAST);
+            
         } else {
             Point position = Point(body1->getPosition().x, body1->getPosition().y + space);
+            body1->getPhysicsBody()->setContactTestBitmask(SNAKE_HEAD_BIT_MAST);
             switch (direct) {
                 case Up:
                 {
@@ -130,7 +148,7 @@ void SnakeSprite::run(float x){
 void SnakeSprite::addBody()
 {
     Point position = ((BodyScene *)bodys->getLastObject())->getPosition();
-    Size size = Size(20, 20);
+    Size size = Size(BODY_WIDTH, BODY_WIDTH);
     BodyScene *body = BodyScene::createBody(position, size);
     body->setPhysicsBody(PhysicsBody::createBox(size));
     if (bodys->count()> 2) {

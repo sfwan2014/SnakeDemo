@@ -18,9 +18,11 @@ public:
     virtual void onEnter();
     CREATE_FUNC(HelloWorld);
     void handleDirect(cocos2d::Point point);
+    void drawBackground();
     
-    void createFood();
+    BodyScene* createFood();
     void changeFoodPosition();
+    void growUp();
 };
 
 #endif // __HELLOWORLD_SCENE_H__
