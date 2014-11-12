@@ -41,21 +41,9 @@ void SnakeSprite::enemyInit(int num){
     Point position = Point((640-BODY_WIDTH)/2,(640-BODY_WIDTH)/2);
     Size size = Size(BODY_WIDTH, BODY_WIDTH);
     BodyScene *body = BodyScene::createBody(position, size);
-    
-    body->setPhysicsBody(PhysicsBody::createBox(size));
-    body->getPhysicsBody()->setContactTestBitmask(SNAKE_HEAD_BIT_MAST);
+
     bodys->addObject(body);
     this ->addChild(body);
-}
-
-int SnakeSprite::getNember()
-{
-    return number;
-}
-
-void SnakeSprite::setNumber(int num)
-{
-    number = num;
 }
 
 Direct SnakeSprite::getDirect()
@@ -68,7 +56,7 @@ void SnakeSprite::setDirect(Direct d)
 }
 
 bool SnakeSprite::start(){
-    this->schedule(schedule_selector(SnakeSprite::run), 0.5);
+    this->schedule(schedule_selector(SnakeSprite::run), 0.2);
     return true;
 }
 
@@ -99,6 +87,17 @@ void SnakeSprite::setBodys(cocos2d::__Array *bs)
     bodys->retain();
 }
 
+BodyScene *SnakeSprite::getFood()
+{
+    return food;
+}
+void SnakeSprite::setFood(BodyScene *b)
+{
+    CC_SAFE_RELEASE(food);
+    food = b;
+    food->retain();
+}
+
 // 1 2 3 4 5
 void SnakeSprite::run(float x){
     
@@ -109,11 +108,9 @@ void SnakeSprite::run(float x){
         if (i > 0) {
             BodyScene *body2 = (BodyScene *)bodys->getObjectAtIndex(i-1);
             body1->setPosition(body2->getPosition());
-            body1->getPhysicsBody()->setContactTestBitmask(SNAKE_BODY_BIT_MAST);
             
         } else {
             Point position = Point(body1->getPosition().x, body1->getPosition().y + space);
-            body1->getPhysicsBody()->setContactTestBitmask(SNAKE_HEAD_BIT_MAST);
             switch (direct) {
                 case Up:
                 {
@@ -143,17 +140,32 @@ void SnakeSprite::run(float x){
             body1->setPosition(position);
         }
     }
+    
+    if (GameOver()) {
+        end();
+        reGameOver(NULL);
+    }
 }
 
-void SnakeSprite::addBody()
-{
-    Point position = ((BodyScene *)bodys->getLastObject())->getPosition();
-    Size size = Size(BODY_WIDTH, BODY_WIDTH);
-    BodyScene *body = BodyScene::createBody(position, size);
-    body->setPhysicsBody(PhysicsBody::createBox(size));
-    if (bodys->count()> 2) {
-        body->getPhysicsBody()->setContactTestBitmask(SNAKE_BODY_BIT_MAST);
+bool SnakeSprite::GameOver(){
+    
+    BodyScene *first = (BodyScene *)bodys->getObjectAtIndex(0);
+    for (int i = 1; i < bodys->count(); i++) {
+        BodyScene *body = (BodyScene *)bodys->getObjectAtIndex(i);
+        if (first->getPosition() == body->getPosition()) {
+            return true;
+        }
     }
-    bodys->addObject(body);
-    this ->addChild(body);
+    
+    if (first->getPosition().x <= 0 || first->getPosition().y <= 0 || first->getPosition().x >= 640 || first->getPosition().y >= 640) {
+        return true;
+    }
+    
+    log("(x1=%f, y1=%f) (x2=%f, y2=%f)",first->getPosition().x, first->getPosition().y, food->getPosition().x, food->getPosition().y);
+    if (first->getPosition() == food->getPosition()) {
+        // eat
+        onEat(this, NULL);
+    }
+    
+    return false;
 }

@@ -41,39 +41,39 @@ bool HelloWorld::init()
     };
     Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(listener, this);
     
-    auto contactListener = EventListenerPhysicsContact::create();
-    contactListener->onContactBegin = [this](PhysicsContact& contact){
-        switch (contact.getShapeA()->getBody()->getContactTestBitmask()|contact.getShapeB()->getBody()->getContactTestBitmask()) {
-            case SNAKE_BODY_BIT_MAST|SNAKE_HEAD_BIT_MAST:
-            {
-//                log("自身相撞");
-//                    snake->end();
-//                    Director::getInstance()->replaceScene(TransitionFade::create(1, HelloWorld::createScene()));
-            }
-                break;
-            case SNAKE_HEAD_BIT_MAST|EDGE_BIT_MASK:
-            {
-                log("撞墙");
-                snake->end();
-                Director::getInstance()->replaceScene(TransitionFade::create(1, HelloWorld::createScene()));
-            }
-                break;
-            case SNAKE_HEAD_BIT_MAST|SNAKE_FOOD_BIT_MAST:
-            {
-//                log("eat");
-//                this->growUp();
-//                this->createFood();
-//                this->changeFoodPosition();
-            }
-                break;
-                
-            default:
-                break;
-        }
-        
-        return true;
-    };
-    Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(contactListener, this);
+//    auto contactListener = EventListenerPhysicsContact::create();
+//    contactListener->onContactBegin = [this](PhysicsContact& contact){
+//        switch (contact.getShapeA()->getBody()->getContactTestBitmask()|contact.getShapeB()->getBody()->getContactTestBitmask()) {
+//            case SNAKE_BODY_BIT_MAST|SNAKE_HEAD_BIT_MAST:
+//            {
+////                log("自身相撞");
+////                    snake->end();
+////                    Director::getInstance()->replaceScene(TransitionFade::create(1, HelloWorld::createScene()));
+//            }
+//                break;
+//            case SNAKE_HEAD_BIT_MAST|EDGE_BIT_MASK:
+//            {
+//                log("撞墙");
+//                snake->end();
+//                Director::getInstance()->replaceScene(TransitionFade::create(1, HelloWorld::createScene()));
+//            }
+//                break;
+//            case SNAKE_HEAD_BIT_MAST|SNAKE_FOOD_BIT_MAST:
+//            {
+////                log("eat");
+////                this->growUp();
+////                this->createFood();
+////                this->changeFoodPosition();
+//            }
+//                break;
+//                
+//            default:
+//                break;
+//        }
+//        
+//        return true;
+//    };
+//    Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(contactListener, this);
     
     return true;
 }
@@ -177,8 +177,6 @@ void HelloWorld::drawBackground()
  
     layerColorGB = cocos2d::LayerColor::create(Color4B(200,200,200,255), width, width);
     layerColorGB->setPosition(Point(0, (visibleSize.height-visibleSize.width)/2));
-    layerColorGB->setPhysicsBody(PhysicsBody::createEdgeBox(Size(width, width), PHYSICSBODY_MATERIAL_DEFAULT, 0, Vec2(visibleSize.width/2, visibleSize.width/2)));
-    layerColorGB->getPhysicsBody()->setContactTestBitmask(EDGE_BIT_MASK);
     addChild(layerColorGB);
     
     width = width;
@@ -203,48 +201,40 @@ void HelloWorld::drawBackground()
         line->setPosition(p);
         layerColorGB->addChild(line);
     }
-    
-    
-    snake = SnakeSprite::createSnake(1);
-    layerColorGB->addChild(snake);
-    snake->start();
-    
-    this->createFood();
+    // 创建蛇
+    initSnake();
 }
 
-void HelloWorld::onEnter(){
-    Layer::onEnter();
-    
-//    auto bounds = Node::create();
-//    bounds->setContentSize(visibleSize);
-//    bounds->setPosition(visibleSize/2);
-//    bounds->setPhysicsBody(PhysicsBody::createEdgeBox(bounds->getContentSize(), PHYSICSSHAPE_MATERIAL_DEFAULT, 0));
-//    bounds->getPhysicsBody()->setContactTestBitmask(EDGE_BIT_MASK);
-//    addChild(bounds);
+void HelloWorld::initSnake(){
+    snake = SnakeSprite::createSnake(1);
+    // eat
+    snake->onEat = [this](SnakeSprite *s, void * v){
+        this->growUp();
+    };
+    // game over
+    snake->reGameOver = [](void *v){
+        Director::getInstance()->replaceScene(TransitionFade::create(1, HelloWorld::createScene()));
+    };
+    layerColorGB->addChild(snake);
+    snake->start();
+    // 创建食物
+    this->createFood();
+    snake->setFood(food);
 }
 
 BodyScene* HelloWorld::createFood(){
     // 加入随机整数
     srand((unsigned)time(NULL));
-    int x = rand()%32 * 20 -10;
-    int y = rand()%32 * 20 -10;
+    int x = rand()%32 * 20+10;
+    int y = rand()%32 * 20+10;
+    x = MIN(x, 630);
+    y = MIN(y, 630);
     Point position = Point(x,y);
     Size size = Size(20,20);
     
     food = BodyScene::createBody(position, size);
-//    food->setPhysicsBody(PhysicsBody::createBox(size));
-//    food->getPhysicsBody()->setContactTestBitmask(SNAKE_FOOD_BIT_MAST);
     layerColorGB->addChild(food);
     return food;
-}
-
-void HelloWorld::changeFoodPosition(){
-    // 加入随机整数
-    srand((unsigned)time(NULL));
-    int x = rand()%32 * 20-10;
-    int y = rand()%32 * 20-10;
-    Point position = Point(x,y);
-    food->setPosition(position);
 }
 
 void HelloWorld::growUp(){
@@ -254,9 +244,9 @@ void HelloWorld::growUp(){
     
     food->removeFromParent();
     snake->addChild(food);
-//    food->getPhysicsBody()->setContactTestBitmask(SNAKE_HEAD_BIT_MAST);
     newBodys->addObjectsFromArray(bodys);
     snake->setBodys(newBodys);
     
     createFood();
+    snake->setFood(food);
 }

@@ -15,13 +15,16 @@ private:
 public:
     static cocos2d::Scene* createScene();
     virtual bool init();
-    virtual void onEnter();
     CREATE_FUNC(HelloWorld);
+    // 判断方向
     void handleDirect(cocos2d::Point point);
+    // 创建背景
     void drawBackground();
-    
+    // 初始化蛇
+    void initSnake();
+    // 初始化食物
     BodyScene* createFood();
-    void changeFoodPosition();
+    // 长大
     void growUp();
 };
 
